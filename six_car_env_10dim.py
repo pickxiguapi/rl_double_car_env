@@ -1,15 +1,21 @@
+'''
+
+方案1： 两车+四专家规则
+两车：10维动作训练
+四车：专家规则
+
+'''
 from car import Car
 from state import State
 import random
 from net import DQN_10dim
-from net import DQN_5dim
 import torch
 from GUI import GUI
 import pygame
 import time
+import csv
 
-
-class Environment10(object):
+class Environment6(object):
     # 一些参数
 
     # 前向感知距离
@@ -43,16 +49,8 @@ class Environment10(object):
         self.car_list.append(en_car3)
         en_car4 = Car(4, 4, 2, random.randint(18, 27), 200 - random.randint(10, 25) * 10)
         self.car_list.append(en_car4)
-        en_car5 = Car(5, 5, 1, random.randint(18, 27), 200 + random.randint(10, 25) * 10 + random.randint(10, 25) * 10)
+        en_car5 = Car(5, 5, 2, random.randint(18, 27), 200 + random.randint(10, 25))
         self.car_list.append(en_car5)
-        en_car6 = Car(6, 6, 1, random.randint(18, 27), 200 - random.randint(10, 25) * 10 - random.randint(10, 25) * 10)
-        self.car_list.append(en_car6)
-        en_car7 = Car(7, 7, 2, random.randint(18, 27), 200 + random.randint(10, 25) * 10 + random.randint(10, 25) * 10)
-        self.car_list.append(en_car7)
-        en_car8 = Car(8, 8, 2, random.randint(18, 27), 200 - random.randint(10, 25) * 10 - random.randint(10, 25) * 10)
-        self.car_list.append(en_car8)
-        en_car9 = Car(9, 9, 2, random.randint(18, 27), 210)
-        self.car_list.append(en_car9)
 
     def add_car(self):
         # 初始化训练
@@ -91,46 +89,14 @@ class Environment10(object):
         self.car_list[4].v0 = random.randint(18, 27)
         self.car_list[4].position = 200 - random.randint(10, 25) * 10
         self.car_list[4].auto_a = 0
-        # en_car5 = Car(5, 5, 1, random.randint(18, 27), 200 + random.randint(10, 25) * 10 + random.randint(10, 25) * 10)
+        # en_car5 = Car(5, 5, 2, random.randint(18, 27), 200+random.randint(10, 25))
         self.car_list[5].auto_a = 0
         self.car_list[5].car_id = 5
         self.car_list[5].no = 5
-        self.car_list[5].lane = 1
-        self.car_list[5].a = 1
+        self.car_list[5].lane = 2
+        self.car_list[5].a = 2
         self.car_list[5].v0 = random.randint(18, 27)
-        self.car_list[5].position = 200 + random.randint(10, 25) * 10 + random.randint(10, 25) * 10
-        # en_car6 = Car(6, 6, 1, random.randint(18, 27), 200 - random.randint(10, 25) * 10 - random.randint(10, 25) * 10)
-        self.car_list[6].auto_a = 0
-        self.car_list[6].car_id = 6
-        self.car_list[6].no = 6
-        self.car_list[6].lane = 1
-        self.car_list[6].a = 1
-        self.car_list[6].v0 = random.randint(18, 27)
-        self.car_list[6].position = 200 - random.randint(10, 25) * 10 - random.randint(10, 25) * 10
-        # en_car7 = Car(7, 7, 2, random.randint(18, 27), 200 + random.randint(10, 25) * 10 + random.randint(10, 25) * 10)
-        self.car_list[7].auto_a = 0
-        self.car_list[7].car_id = 7
-        self.car_list[7].no = 7
-        self.car_list[7].lane = 2
-        self.car_list[7].a = 2
-        self.car_list[7].v0 = random.randint(18, 27)
-        self.car_list[7].position = 200 + random.randint(10, 25) * 10 + random.randint(10, 25) * 10
-        # en_car8 = Car(8, 8, 2, random.randint(18, 27), 200 - random.randint(10, 25) * 10 - random.randint(10, 25) * 10)
-        self.car_list[8].auto_a = 0
-        self.car_list[8].car_id = 8
-        self.car_list[8].no = 8
-        self.car_list[8].lane = 2
-        self.car_list[8].a = 2
-        self.car_list[8].v0 = random.randint(18, 27)
-        self.car_list[8].position = 200 - random.randint(10, 25) * 10 - random.randint(10, 25) * 10
-        # en_car9 = Car(9, 9, 2, random.randint(18, 27), 205)
-        self.car_list[9].auto_a = 0
-        self.car_list[9].car_id = 9
-        self.car_list[9].no = 9
-        self.car_list[9].lane = 2
-        self.car_list[9].a = 2
-        self.car_list[9].v0 = random.randint(18, 27)
-        self.car_list[9].position = 205
+        self.car_list[5].position = 200 + random.randint(10, 25)
 
     def get_car1(self, car_id):
         # 获取id为id的车辆行车道上前方车辆的距离d1和速度v1
@@ -241,13 +207,15 @@ class Environment10(object):
         # 重置奖励
         self.episode_reward = 0
         self.r0 = 0
-        self.r9 = 0  # r0 r9用于记录单车奖励
+        self.r5 = 0  # r0 r5 用于记录单车奖励
+        # 重置换道次数
+        self.change_lane = 0
         # print info
         # print(self.car_list[0].print_info())
         # print(self.car_list[1].print_info())
         # print(self.car_list[2].print_info())
         # print(self.car_list[3].print_info())
-        #print(self.car_list[4].print_info())
+        # print(self.car_list[4].print_info())
 
     def get_reward(self, car_id):
         for car in self.car_list:
@@ -293,7 +261,7 @@ class Environment10(object):
             self.r += reward[i]  # 单步奖励和
         self.episode_reward += self.r  # 整局奖励
         self.r0 += reward[0]
-        self.r9 += reward[9]
+        self.r5 += reward[5]
 
         observations_ = [[] for _ in range(len(self.car_list))]
         i = 0
@@ -337,9 +305,14 @@ class Environment10(object):
             if self.car_list[car_id].v_plan > self.car_list[car_id].v_task:
                 self.car_list[car_id].v_plan = self.car_list[car_id].v_task
         elif car.s.l == 1 and car.a == 2:  # 换道
+            if car.car_id == 0 or car.car_id == 5:
+                self.change_lane += 1
             self.car_list[car_id].lane = 2
             self.car_list[car_id].v_plan = self.car_list[car_id].v_overtake
         elif car.s.l == 2 and car.a == 1:  # 换道
+            if car.car_id == 0 or car.car_id == 5:
+                self.change_lane += 1
+            self.change_lane += 1
             self.car_list[car_id].lane = 1
             self.car_list[car_id].v_plan = self.car_list[car_id].v_task
         elif car.s.l == 2 and car.a == 2:  # 跟随
@@ -374,27 +347,45 @@ class Environment10(object):
         d_follow = v0 * v0 / (2 * a0) + 5
         return d_follow
 
+    def choose_expert_actions(self, car_id):
+        d1, v1 = self.get_car1(car_id)
+        d2, v2 = self.get_car2(car_id)
+        d3, v3 = self.get_car3(car_id)
+        d4, v4 = self.get_car4(car_id)
+
+        if self.car_list[car_id].lane == 1:
+            if (d1 < 50 or v1 - self.car_list[car_id].v_task < -3) \
+                    and (d3 - d1 > 8 and v3 - v1 > 1) \
+                    and d4 > 60:
+                action = 1
+            else:
+                action = 0
+        else:
+            if (d1 > 100 or v1 > v3) and d2 > 60:
+                action = 0
+            else:
+                action = 1
+
+        return action
+
     def rl_method(self):
         # 当前回合数
         self.episode = 0
 
         # some parameter
-        self.max_episode = 1000
+        self.max_episode = 3000
         self.max_step_in_every_episode = 400
         MEMORY_SIZE = 2000
 
         # net
-        self.net_5_dim = DQN_5dim()
         self.net_10_dim = DQN_10dim()
         # load parameter in net_5_dim
-        self.net_5_dim.eval_net.load_state_dict(torch.load('eval_preprogress_model.pkl'))
-        self.net_5_dim.target_net.load_state_dict(torch.load('target_preprogress_model.pkl'))
 
-        # epsilon
+        # init epsilon
         self.epsilon = 0.9
 
         # creat GUI
-        self.GUI = GUI()
+        # self.GUI = GUI()
 
         for i_episode in range(self.max_episode):
             # 新的episode
@@ -404,7 +395,7 @@ class Environment10(object):
             self.reset()
             self.print_train_info()
 
-            self.GUI.reset()
+            # self.GUI.reset()
 
             # episode running
             while True:
@@ -423,10 +414,10 @@ class Environment10(object):
                 # get action
                 # first 10 step -> not choose action
                 if self.epi_step < 10:
-                    actions = [0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1]
+                    actions = [0, 0, 0, 1, 1, 1]
                 else:
-                    '''actions = [0 for _ in range(len(self.car_list))]
-                    double_a = self.net_10_dim.choose_actions(s[0]+s[9],self.epsilon)
+                    actions = [0 for _ in range(len(self.car_list))]
+                    double_a = self.net_10_dim.choose_actions(s[0]+s[5],self.epsilon)
                     # double_a to action
                     # 0: 0 0
                     # 1: 0 1
@@ -434,14 +425,12 @@ class Environment10(object):
                     # 3: 1 1
                     action_trans_dict = {0: [0, 0], 1: [0, 1], 2: [1, 0], 3: [1, 1]}
                     # print(action_trans_dict[double_a[0]])
-                    actions[0], actions[9] = action_trans_dict[double_a[0]]
+                    actions[0], actions[5] = action_trans_dict[double_a[0]]
 
-                    for j in range(1, 9):
-                        a = self.net_5_dim.choose_actions(s[j], epsilon=1)
-                        actions[j] = a'''
-                    for j in range(0, 10):
-                        a = self.net_5_dim.choose_actions(s[j], epsilon=1)
-                        actions[j] = a
+                    # expert rule
+                    for j in range(1, 5):
+                        a = self.choose_expert_actions(j)
+                        actions.append(a)
 
                 # step back
                 s_, r, done = self.step(actions)
@@ -456,17 +445,17 @@ class Environment10(object):
                 print('a:', a)
                 print('r:', r)
                 print('s_:', s_)'''
-                # Note: 0 9 为auto_Car 协同网络，其他为 random car 使用单车网络
-                '''action_trans_dict2 = {(0, 0): 0, (0, 1): 1, (1, 0): 2, (1, 1): 3}
-                tmp = (actions[0], actions[9])
-                self.net_10_dim.store_transition(s[0]+s[9], action_trans_dict2[tmp], r[0]+r[9], s_[0]+s_[9])'''
+                # Note: 0 5 为auto_Car 协同网络，其他为 random car 使用专家策略
+                action_trans_dict2 = {(0, 0): 0, (0, 1): 1, (1, 0): 2, (1, 1): 3}
+                tmp = (actions[0], actions[5])
+                self.net_10_dim.store_transition(s[0]+s[5], action_trans_dict2[tmp], r[0]+r[5], s_[0]+s_[5])
 
                 # learn
-                #if self.net_10_dim.memory_counter > MEMORY_SIZE:
-                #    self.net_10_dim.learn()
+                if self.net_10_dim.memory_counter > MEMORY_SIZE:
+                    self.net_10_dim.learn()
 
                 # draw
-                self.clock = pygame.time.Clock()
+                '''self.clock = pygame.time.Clock()
                 self.ticks = 60
                 self.GUI.draw_window(2)
                 for i in range(len(self.car_list)):
@@ -475,7 +464,7 @@ class Environment10(object):
                 # delay = 60ms 刷新时间
                 self.clock.tick(self.ticks)
                 # sleep
-                time.sleep(0.1)
+                time.sleep(0.1)'''
 
                 # is done
                 if self.check_conflict() or self.epi_step >= self.max_step_in_every_episode:  # 发生碰撞或者达到最大运行步数
@@ -490,17 +479,13 @@ class Environment10(object):
                 else:
                     self.epsilon = 1 - (1 - self.epsilon) * 0.9
 
-            print('Episode', self.episode, 'reward', (self.r0+self.r9)/self.epi_step)
-            with open('./data/double_car_model_reward.txt', 'a') as file_handle:  # .txt可以不自己新建,代码会自动新建,但是每次重新用要删掉
-                file_handle.write(str(self.r0 / self.epi_step))  # 写入
-                file_handle.write(' ')
-                file_handle.write(str(self.r9 / self.epi_step))
-                file_handle.write(' ')
-                file_handle.write(str((self.r0+self.r9) / self.epi_step))
-                file_handle.write('\n')
+            print('Episode', self.episode, 'reward', (self.r0+self.r5)/self.epi_step)
+            # epi_index, step, car0_reward, car5_reward, car_change_lane_number
+            with open('./data/double_car_model_reward.csv', 'a', encoding='utf-8-sig', newline='' "") as file_handle:
+                csv_writer = csv.writer(file_handle)
+                csv_writer.writerow([self.episode, self.epi_step, self.r0 / self.epi_step, self.r5 / self.epi_step, self.change_lane, (self.r0+self.r5) / self.epi_step])
 
         # save
-        torch.save(self.net_10_dim.eval_net.state_dict(), './10_dim_eval_net_parameter.pkl')
-        torch.save(self.net_10_dim.target_net.state_dict(), './10_dim_target_net_parameter.pkl')
+        torch.save(self.net_10_dim.eval_net.state_dict(), './model/10_dim_eval_net_parameter20200524.pkl')
+        torch.save(self.net_10_dim.target_net.state_dict(), './model/10_dim_target_net_parameter20200524.pkl')
         print("\n训练结束\n")
-

@@ -29,13 +29,13 @@ class GUI(object):
 
     def draw_car(self, position, lane):
         # 根据车的位置绘制车
-        car_image = pygame.image.load("car2.png").convert_alpha()
+        car_image = pygame.image.load("./pic/car2.png").convert_alpha()
         self.screen.blit(car_image, (position, lane*110+20))
         # print("draw_position:", position * self.ppu)
 
     def draw_window(self, roadway_num=2):
         # 绘制车道
-        background = pygame.image.load("road_1600x200_110.png").convert()
+        background = pygame.image.load("./pic/road_1600x200_110.png").convert()
         for i in range(1):
             for j in range(roadway_num):
                 self.screen.blit(background, (i * 800, j * single_road_height))

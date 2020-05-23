@@ -136,7 +136,7 @@ class DQN_5dim(object):
             actions_value = self.eval_net.forward(x)
             # print('actions_value',torch.max(actions_value, 1)[0].data.numpy()[0])
             datastr = str(torch.max(actions_value, 1)[0].data.numpy()[0])
-            with open('Q5dim.txt', 'a') as file_handle:  # .txt可以不自己新建,代码会自动新建
+            with open('./data/Q5dim.txt', 'a') as file_handle:  # .txt可以不自己新建,代码会自动新建
                 file_handle.write(datastr)  # 写入
                 file_handle.write('\n')
             action = torch.max(actions_value, 1)[1].data.numpy()
@@ -147,7 +147,7 @@ class DQN_5dim(object):
             # 为做存储用，特意过一遍神经网络，存储actions_value,实际使用的动作还是随机的
             actions_value = self.eval_net.forward(x)
             datastr = str(torch.max(actions_value, 1)[0].data.numpy()[0])
-            with open('Q5dim.txt', 'a') as file_handle:  # .txt可以不自己新建,代码会自动新建
+            with open('./data/Q5dim.txt', 'a') as file_handle:  # .txt可以不自己新建,代码会自动新建
                 file_handle.write(datastr)  # 写入
                 file_handle.write('\n')
 
