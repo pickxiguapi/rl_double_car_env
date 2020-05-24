@@ -36,6 +36,10 @@ class GUI(object):
         self.screen.blit(car_image, (position, lane*110+20))
         # print("draw_position:", position * self.ppu)
 
+    def draw_signal(self, position1, lane1, position2, lane2):
+        BLUE = (0, 0, 255)
+        pygame.draw.aaline(self.screen, BLUE, (position1, lane1*110+20), (position2, lane2*110+20), 1)
+
     def draw_window(self, roadway_num=2):
         # 绘制车道
         background = pygame.image.load("../pic/road_1600x200_110.png").convert()

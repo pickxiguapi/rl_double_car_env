@@ -1,6 +1,8 @@
 from car import Car
 from state import State
 import random
+from net_test import DQN_5dim_test
+from net_test import DQN_10dim_test
 from net import DQN_5dim
 import torch
 from GUI import GUI
@@ -363,7 +365,7 @@ class Environment(object):
         self.episode = 0
 
         # some parameter
-        self.max_episode = 1000
+        self.max_episode = 5000
         self.max_step_in_every_episode = 400
         MEMORY_SIZE = 2000
 
@@ -371,7 +373,7 @@ class Environment(object):
         self.net = DQN_5dim()
 
         # GUI
-        self.GUI = GUI()
+        # self.GUI = GUI()
 
         # epsilon
         self.epsilon = 0.9
@@ -386,7 +388,7 @@ class Environment(object):
             self.print_train_info()
 
             # GUI reset
-            self.GUI.reset()
+            # self.GUI.reset()
 
             # episode running
             while True:
@@ -437,7 +439,7 @@ class Environment(object):
                     self.net.learn()
 
                 # draw
-                self.clock = pygame.time.Clock()
+                '''self.clock = pygame.time.Clock()
                 self.ticks = 60
                 self.GUI.draw_window(2)
                 for i in range(len(self.car_list)):
@@ -446,7 +448,7 @@ class Environment(object):
                 # delay = 60ms 刷新时间
                 self.clock.tick(self.ticks)
                 # sleep
-                time.sleep(0.1)
+                time.sleep(0.1)'''
 
                 # is done
                 if self.check_conflict() or self.epi_step >= self.max_step_in_every_episode:  # 发生碰撞或者达到最大运行步数
@@ -516,6 +518,93 @@ class Environment(object):
                 self.GUI.draw_window(2)
                 for i in range(len(self.car_list)):
                     self.GUI.draw_car(self.car_list[i].position % 1600, self.car_list[i].lane - 1)
+                pygame.display.flip()
+
+                # delay = 60ms 刷新时间
+                self.clock.tick(self.ticks)
+                # sleep
+                time.sleep(0.1)
+
+                # is done
+                if self.check_conflict() or self.epi_step >= 400:  # 发生碰撞或者达到最大运行步数
+                    print('Is_conflict:', self.check_conflict())
+                    print('Total_step_in_this_episode:', self.epi_step)
+                    break
+
+            print('Episode', self.episode, 'reward', self.episode_reward / self.epi_step)
+
+    def calculate_single_double_func(self):
+        # 原理是将训练好的5dim模型和10dim模型同时加载，每次选择动作时按5dim选，但是每次都计算Q值
+        # 1/ 计算6个车自身单车的Q
+        # 2/ 每两车按10dim计算Q 记作Q car1 car2 例 Q13
+        # 3/ 存储每个车的位置和车道 以用来复盘 绘图
+        self.GUI = GUI()
+
+        self.net_5_dim = DQN_5dim_test()
+        self.net_5_dim.eval_net.load_state_dict(torch.load('../model/5_dim_eval_net_parameter_expert.pkl'))
+        self.net_5_dim.target_net.load_state_dict(torch.load('../model/5_dim_target_net_parameter_expert.pkl'))
+
+        self.net_10_dim = DQN_10dim_test()
+        self.net_10_dim.eval_net.load_state_dict(torch.load('../model/10_dim_eval_net_parameter20200524.pkl'))
+        self.net_10_dim.target_net.load_state_dict(torch.load('../model/10_dim_target_net_parameter20200524.pkl'))
+
+        for i_episode in range(100):
+            # 新的episode
+            self.episode += 1
+
+            # reset and print_info
+            self.reset()
+            self.print_train_info()
+
+            self.GUI.reset()
+
+            # episode running
+            while True:
+                # step ++
+                self.epi_step += 1
+
+                # run step
+                s = [[] for _ in range(len(self.car_list))]
+                i = 0
+                for car in self.car_list:
+                    car.s = self.get_state(car.car_id)  # 获取每个车辆的状态信息
+                    s[i] = [car.s.l, car.s.t1, car.s.t2, car.s.t3, car.s.t4]
+                    i += 1
+
+                # get action
+                # 计算Q值并比较，计算两次Q值，第一次是计算单车Q并选择动作，第二次是任意双车计算Q
+                actions = []
+                maxQ = []
+                for j in range(len(self.car_list)):
+                    a, Q = self.net_5_dim.choose_actions(s[j], 1)
+                    actions.append(a)
+                    maxQ.append(Q)
+
+                Q2 = [[0 for j in range(len(self.car_list))] for i in range(len(self.car_list))]
+                flag = [[False for j in range(len(self.car_list))] for i in range(len(self.car_list))]
+                for i in range(len(self.car_list)):
+                    for j in range(len(self.car_list)):
+                        # 仅仅是计算Q而不用来干什么
+                        _, Q2[i][j] = self.net_10_dim.choose_actions(s[i]+s[j],1)
+                        if Q2[i][j] > maxQ[i]+maxQ[j]:
+                            flag[i][j] = True
+                            print('coord id1:',i, 'id2:',j)
+
+
+                # step back
+                s_, r, done = self.step(actions)
+                # print('reward:', reward)
+
+                self.clock = pygame.time.Clock()
+                self.ticks = 60
+
+                self.GUI.draw_window(2)
+                for i in range(len(self.car_list)):
+                    self.GUI.draw_car(self.car_list[i].position % 1600, self.car_list[i].lane - 1, i)
+                for i in range(len(self.car_list)):
+                    for j in range(len(self.car_list)):
+                        if flag[i][j] == True:
+                            self.GUI.draw_signal(self.car_list[i].position % 1600, self.car_list[i].lane - 1, self.car_list[j].position % 1600, self.car_list[j].lane - 1)
                 pygame.display.flip()
 
                 # delay = 60ms 刷新时间

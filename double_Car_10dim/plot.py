@@ -5,7 +5,7 @@ import numpy as np
 episode_num = 3000
 # epi_index, step, car0_reward, car5_reward, car_change_lane_number
 epi, step, car0_reward, car5_reward, car_change_lane_number = [], [], [], [], []
-with open('./data/double_car_model_reward.csv', encoding='utf-8') as f:
+with open('../data/double_car_model_reward.csv', encoding='utf-8') as f:
     reader = csv.reader(f)
     for i in range(episode_num):
         data = next(reader)
@@ -26,10 +26,11 @@ plt.title('2 car + 4 expert car avg reward')
 plt.xlabel('epi')
 plt.ylabel('avg reward')
 plt.plot(epi, car5_reward)
+plt.savefig('../pic/2 car + 4 expert car avg reward.jpg')
 plt.show()
 
 Qlist = []
-with open('./data/Q10dim.txt') as Q10:
+with open('../data/Q10dim.txt') as Q10:
     for q in Q10:
         q.rstrip('\n')
         Qlist.append(float(q))
@@ -43,6 +44,7 @@ plt.title('2 car + 4 expert car Q value')
 plt.xlabel('step')
 plt.ylabel('Q value')
 plt.plot(x, qq)
+plt.savefig('../pic/2 car + 4 expert car Q value.jpg')
 plt.show()
 
 
